@@ -4,21 +4,56 @@ const path = require("path");
 const bodyParser = require("body-parser");
 const handlebars = require("express-handlebars");
 const app = express();
+const mongoose = require("mongoose");
+const Schema = mongoose.Schema;
+//4qOR3EYlGGioqxKW
+const registration = mongoose.createConnection("mongodb+srv://tliu84:4qOR3EYlGGioqxKW@cluster0.fhmfm06.mongodb.net/registration?retryWrites=true&w=majority");
+const blog = mongoose.createConnection("mongodb+srv://tliu84:4qOR3EYlGGioqxKW@cluster0.fhmfm06.mongodb.net/registration?retryWrites=true&w=majority");
+const read = mongoose.createConnection("mongodb+srv://tliu84:4qOR3EYlGGioqxKW@cluster0.fhmfm06.mongodb.net/registration?retryWrites=true&w=majority");
+
+const registration_schema = new Schema({
+    "fname": String,
+    "lname": String,
+    "email": String,
+    "username": String,
+    "Address1": String,
+    "Address2": String,
+    "city": String,
+    "postal": String,
+    "country": String,
+    "password": String
+});
+
+const blog_schema = new Schema({
+    "title": String,
+    "content": String
+});
+
+const read_schema = new Schema({
+    "read": String
+});
+
+const customer = registration.model("registration", registration_schema);
+const blogcon = blog.model("blog_db", blog_schema);
+const readcon = read.model("read_db", read_schema);
 
 app.engine(".hbs", handlebars.engine({ extname: '.hbs' }));
 app.set('view engine', '.hbs');
 
 app.use(bodyParser.urlencoded({ extended: true }));
 
-
-
 // setup a 'route' to listen on the default url path
 app.get("/", (req, res) => {
-    res.render("blog", { layout: false });
+    blogcon.findOne().exec().then((data) => {
+        console.log(data);
+        res.render("blog", { title: data.title, content: data.content, layout: false });
+    });
 });
 
 app.get("/article", function (req, res) {
-    res.render("read_more", { layout: false });
+    readcon.findOne().exec().then((data) => {
+        res.render("read_more", { read: data.read, layout: false });
+    });
 });
 
 app.get("/login", function (req, res) {
@@ -32,7 +67,6 @@ app.post("/login", (req, res) => {
     }
 
     if (userdata.user == "" || userdata.pass == "") {
-
         res.render("login", { data: userdata, layout: false });
         return;
     }
@@ -42,7 +76,21 @@ app.post("/login", (req, res) => {
         return;
     }
 
-    res.render("dashboard", { layout: false });
+    customer.findOne({ username: userdata.user, password: userdata.pass }, ["fname", "lname", "username"]).exec().then((data) => {
+        if (data) {
+            if (data.id == "6366c66a9afb45a8af4a82c4") {
+                res.render("login_Dashboard", { fname: data.fname, lname: data.lname, username: data.username, layout: false });
+                return;
+            }
+            else {
+                res.render("loginuser_Dashboard", { fname: data.fname, lname: data.lname, username: data.username, layout: false });
+                return;
+            }
+        } else {
+            res.render("login", { error: "Sorry, you entered the wrong username and/or password", layout: false });
+            return;
+        }
+    });
 
 });
 
@@ -68,7 +116,7 @@ app.post("/registration", (req, res) => {
         confirmpassword: req.body.confirmpassword,
     }
 
-    checkpass = () => {
+    var checkpass = () => {
         if (userdata.password == userdata.confirmpassword) {
             return true;
         }
@@ -109,6 +157,34 @@ app.post("/registration", (req, res) => {
         return;
     }
 
+    var username = "";
+    for (let index = 0; index < userdata.email.length; index++) {
+        const element = userdata.email[index];
+        if (element != '@') {
+            username += element
+        }
+        if (element == '@') {
+            break;
+        }
+    }
+    let useaccount = new customer({
+        fname: userdata.fname,
+        lname: userdata.lname,
+        email: userdata.email,
+        username: username,
+        Address1: userdata.Address1,
+        Address2: userdata.Address2,
+        city: userdata.city,
+        postal: userdata.postalcode,
+        country: userdata.country,
+        password: userdata.password
+    }).save((e, data) => {
+        if (e) {
+            console.log(e);
+        } else {
+            console.log(data);
+        }
+    });
     res.render("dashboard", { layout: false });
 
 });
