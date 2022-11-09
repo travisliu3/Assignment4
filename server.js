@@ -24,7 +24,10 @@ const registration_schema = new Schema({
     "city": String,
     "postal": String,
     "country": String,
-    "password": String
+    "password": {
+        "type": String,
+        "unique": true
+    }
 });
 
 const blog_schema = new Schema({
