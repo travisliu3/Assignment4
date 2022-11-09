@@ -16,7 +16,7 @@ const registration_schema = new Schema({
     "lname": String,
     "email": String,
     "username": {
-        "user": String,
+        "type": String,
         "unique": true
     },
     "Address1": String,
